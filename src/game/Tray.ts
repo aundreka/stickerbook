@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { DEPTH, TRAY_H, DESIGN_W, DESIGN_H } from '../constants'
 import { texKey } from '../assets'
-import { sx, sy, sd } from '../utils/responsive'
+import { sx, sy, sd, viewW } from '../utils/responsive'
 
 // Bottom tray. The draggable is a plain Image (reliable pointer/touch dragging);
 // the number badge is a separate object synced to the image every frame
@@ -141,7 +141,9 @@ export class Tray {
   }
 
   relayout(): void {
-    this.bg.setPosition(sx(DESIGN_W / 2), sy(DESIGN_H)).setDisplaySize(sd(DESIGN_W), sd(TRAY_H))
+    // Blue bar stretches the FULL viewport width (so it reaches the edges in
+    // landscape), but its height + the items stay in portrait design scaling.
+    this.bg.setPosition(viewW() / 2, sy(DESIGN_H)).setDisplaySize(viewW(), sd(TRAY_H))
     const { w, h } = this.itemDisplay()
     const ids = [...this.items.keys()]
     ids.forEach((id, i) => {
