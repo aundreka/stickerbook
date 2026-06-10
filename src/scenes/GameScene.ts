@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { IDLE_HINT_MS } from '../constants'
-import { ROUNDS } from '../game/layout'
+import { ITERATION } from '../iteration'
+import { buildRounds } from '../game/layout'
+import { CountdownTimer } from '../game/CountdownTimer'
 import { RoomBackground } from '../game/RoomBackground'
 import { SlotManager } from '../game/SlotManager'
 import { Tray } from '../game/Tray'
@@ -37,6 +39,8 @@ export class GameScene extends Phaser.Scene {
   private solvedOnce = false
   private tutorialDone = false
   private idleTimer?: Phaser.Time.TimerEvent
+  private rounds: number[][] = []
+  private countdown?: CountdownTimer
 
   constructor() {
     super('Game')
@@ -52,6 +56,7 @@ export class GameScene extends Phaser.Scene {
     this.audioMgr = new SoundManager(this)
     this.endCard = new EndCard(this)
     this.progress = new ProgressTracker(this, () => this.endGame())
+    if (ITERATION.mode === 'time') this.countdown = new CountdownTimer(this)
     this.dragCtl = new DragController(this, {
       onStart: () => this.onDragStart(),
       onMove: (id, x, y) => this.onDragMove(id, x, y),
@@ -73,8 +78,10 @@ export class GameScene extends Phaser.Scene {
       this.resetIdle()
     })
 
+    this.rounds = buildRounds() // randomized each play
     trackEvent('DISPLAYED')
     this.progress.start() // 60s timer (time mode) runs from display
+    this.countdown?.show()
     this.startRound()
 
     // QA-only: auto-play to fill the room / reach the end card. Guarded by the
@@ -101,12 +108,15 @@ export class GameScene extends Phaser.Scene {
   update(): void {
     // Keep the tray number badges glued to their (draggable) images.
     this.tray?.syncBadges()
+    if (this.countdown) this.countdown.set(this.progress.remainingSeconds())
   }
 
   // -- lifecycle handlers ----------------------------------------------------
   private onAdPause(): void {
-    if (!this.scene.isPaused()) this.scene.pause()
     this.audioMgr.pause()
+    // Once the end card is up, keep the scene animating (so the CTA keeps
+    // pulsing even after the store opens) — just mute the audio.
+    if (!this.gated && !this.scene.isPaused()) this.scene.pause()
   }
   private onAdResume(): void {
     if (this.scene.isPaused()) this.scene.resume()
@@ -128,7 +138,7 @@ export class GameScene extends Phaser.Scene {
 
   // -- round flow ------------------------------------------------------------
   private startRound(): void {
-    const ids = ROUNDS[this.roundIndex]
+    const ids = this.rounds[this.roundIndex]
     this.currentRoundIds = ids
     this.placedInRound = 0
     this.tray.loadRound(ids)
@@ -222,7 +232,7 @@ export class GameScene extends Phaser.Scene {
 
   private advanceRound(): void {
     this.roundIndex += 1
-    if (this.roundIndex >= ROUNDS.length) {
+    if (this.roundIndex >= this.rounds.length) {
       this.progress.onAllComplete()
       return
     }
@@ -259,17 +269,15 @@ export class GameScene extends Phaser.Scene {
     this.idleTimer?.remove()
     this.hand.cancel()
     this.dragCtl.setEnabled(false)
+    this.countdown?.hide()
     notifyGameEnd()
-    // Payoff: crossfade the room to full color, then present the end card.
-    // The store redirect fires on a tap ANYWHERE on the end card (PDF: "clicking
-    // anywhere on the end screen"). We intentionally do NOT auto-redirect before
-    // the card — that would navigate away before the player sees it (and many
-    // networks reject non-user-initiated redirects). See README deviations.
+    // End scene shows the room exactly as the player left it (only what they
+    // placed). Hide the tray, crossfade to color, then present the end card.
+    this.tray.setVisible(false)
+    // The store redirect fires on a tap ANYWHERE on the end card; we don't auto-
+    // redirect before it (would navigate away first; networks reject that).
     this.roomBg.crossfadeToColored()
-    this.time.delayedCall(800, () => {
-      this.tray.setVisible(false)
-      this.endCard.show()
-    })
+    this.time.delayedCall(800, () => this.endCard.show())
   }
 
   relayout(): void {
@@ -278,6 +286,7 @@ export class GameScene extends Phaser.Scene {
     this.tray.relayout()
     this.hand.relayout()
     this.endCard.relayout()
+    this.countdown?.relayout()
   }
 
   private cleanup(): void {

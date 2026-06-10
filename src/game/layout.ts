@@ -74,28 +74,19 @@ export const STICKERS: StickerDef[] = [
   { id: 50, name: 'Blanket', cx: 428, cy: 440, w: 208, h: 122, labelX: 435, labelY: 423 },
 ]
 
-// Reveal order, sets of 3 (last set has 2). Round 1 mirrors the ref tray
-// (pouf / rug / table). The rest are spread left/center/right so the 3 active
-// outlines never clump into one ambiguous blob.
-export const ROUNDS: number[][] = [
-  [10, 14, 7],
-  [26, 50, 12],
-  [11, 17, 6],
-  [16, 47, 34],
-  [29, 18, 45],
-  [4, 5, 27],
-  [37, 30, 38],
-  [44, 42, 13],
-  [22, 23, 48],
-  [33, 41, 49],
-  [15, 35, 31],
-  [21, 24, 25],
-  [32, 19, 9],
-  [46, 1, 39],
-  [40, 28, 8],
-  [3, 2, 36],
-  [20, 43],
-]
+// Randomized reveal order, built fresh each play so the sequence of stickers
+// (and thus which subset shows in the 10clk / 60sec versions) differs every time.
+// Fisher-Yates shuffle of all ids, chunked into sets of 3 (last set may be 2).
+export function buildRounds(): number[][] {
+  const ids = STICKERS.map((s) => s.id)
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[ids[i], ids[j]] = [ids[j], ids[i]]
+  }
+  const rounds: number[][] = []
+  for (let i = 0; i < ids.length; i += 3) rounds.push(ids.slice(i, i + 3))
+  return rounds
+}
 
 const BY_ID = new Map<number, StickerDef>(STICKERS.map((s) => [s.id, s]))
 export const stickerById = (id: number): StickerDef => {

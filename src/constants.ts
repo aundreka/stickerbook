@@ -41,6 +41,7 @@ export const DEPTH = {
   DRAG: 100_050,
   BURST: 100_100,
   LOGO: 100_200,
+  HUD: 105_000, // countdown timer — above room/tray, below the end card
   DIM: 110_000,
   HAND: 111_000,
   ENDCARD: 120_000,

@@ -70,7 +70,8 @@ export class StickerSlot {
     this.pulse = this.makePulse()
   }
 
-  placeColored(): void {
+  placeColored(animate = true): void {
+    if (this.placed) return
     this.active = false
     this.placed = true
     this.pulse?.remove()
@@ -86,6 +87,7 @@ export class StickerSlot {
       .setDepth(this.depthFor())
     this.layoutImage(this.colored)
     // Snap-in: pop up past full size, then settle — a satisfying placement beat.
+    if (!animate) return
     const t = this.colored.scaleX
     this.colored.setScale(t * 0.2)
     this.scene.tweens.add({

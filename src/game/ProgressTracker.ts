@@ -45,4 +45,9 @@ export class ProgressTracker {
   get isGated(): boolean {
     return this.gated
   }
+
+  /** Seconds left on the time-mode timer (0 if not time mode / not started). */
+  remainingSeconds(): number {
+    return this.timer ? this.timer.getRemainingSeconds() : 0
+  }
 }
