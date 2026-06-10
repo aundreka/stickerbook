@@ -84,6 +84,9 @@ for (const length of ITERATIONS) {
   console.log(`\n=== Building iteration: ${length} ===`)
   execSync('npx vite build', { cwd: ROOT, stdio: 'inherit', env: { ...process.env, VITE_ITERATION: length } })
   const baseHtml = readFileSync(path.join(DIST, 'index.html'), 'utf8')
+  // Convenience: a clean single-file per version at the top level for quick testing
+  // (dist/10clk.html, dist/60sec.html, dist/full.html).
+  writeFileSync(path.join(DIST, `${length}.html`), baseHtml)
 
   for (const net of NETWORKS) {
     if (!net.included) continue

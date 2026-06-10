@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { BG_W, BG_H, DESIGN_W, DESIGN_H, FLOOR_LINE_Y, ROOM_COLORS } from '../constants'
+import { BG_W, BG_H, DESIGN_W, DESIGN_H, FLOOR_LINE_Y, ROOM_COLORS, DEPTH } from '../constants'
 import { sx, sy, sd, viewW, viewH } from '../utils/responsive'
 
 // Owns the room backdrops. The design space is FIT into the canvas, so to keep a
@@ -16,10 +16,10 @@ export class RoomBackground {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
-    this.wall = scene.add.rectangle(0, 0, 10, 10, ROOM_COLORS.wallWhite).setOrigin(0, 0).setDepth(-10)
-    this.floor = scene.add.rectangle(0, 0, 10, 10, ROOM_COLORS.floorWhite).setOrigin(0, 0).setDepth(-10)
-    this.white = scene.add.image(0, 0, 'bgWhite').setOrigin(0.5).setDepth(-9)
-    this.colored = scene.add.image(0, 0, 'bgColored').setOrigin(0.5).setDepth(-9).setAlpha(0)
+    this.wall = scene.add.rectangle(0, 0, 10, 10, ROOM_COLORS.wallWhite).setOrigin(0, 0).setDepth(DEPTH.BG)
+    this.floor = scene.add.rectangle(0, 0, 10, 10, ROOM_COLORS.floorWhite).setOrigin(0, 0).setDepth(DEPTH.BG)
+    this.white = scene.add.image(0, 0, 'bgWhite').setOrigin(0.5).setDepth(DEPTH.BG + 1)
+    this.colored = scene.add.image(0, 0, 'bgColored').setOrigin(0.5).setDepth(DEPTH.BG + 1).setAlpha(0)
     this.relayout()
   }
 

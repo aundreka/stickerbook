@@ -10,6 +10,8 @@
     "build:all": "node scripts/build-all.mjs",
     "assets": "node scripts/convert-assets.mjs",
     "audio": "node scripts/convert-audio.mjs",
+    "tool": "vite --open=/tools/sticker-editor.html --port=5180 --strictPort",
+    "layout": "node scripts/gen-layout.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {

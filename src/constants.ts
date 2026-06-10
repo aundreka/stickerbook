@@ -26,30 +26,29 @@ export const STORE_URL = {
   android: 'https://play.google.com/store/apps/details?id=com.stickerbook.roomdecor',
 }
 
-// Depth map. Room stickers compute their own depth from their FEET in
-// StickerSlot (floor items ~0..1, everything else ~100..2050, painter-sorted by
-// where the sprite's bottom rests). The UI/VFX bands below sit clearly above
-// that range so they always layer over the room.
+// Depth map. Room stickers compute depth in StickerSlot as
+// `zIndex * ROOM_Z + feetY` — zIndex (from the editor) is the primary layer and
+// the sprite's bottom (feet) breaks ties, so a sticker lower in the room draws
+// in front of one higher up at the same zIndex. UI/VFX bands sit far above the
+// whole room range.
 export const DEPTH = {
-  BG: -10, // RoomBackground draws bands at -10, bg images at -9
-  ROOM_MAX: 2100, // top of the room sticker band
-  OUTLINE_BADGE: 2200, // active-outline number badges sit above all room stickers
-  TRAY_BG: 3000,
-  TRAY_ITEM: 3010,
-  TRAY_BADGE: 3016,
-  DRAG: 3050,
-  BURST: 3100,
-  LOGO: 3200,
-  DIM: 4000,
-  HAND: 4100,
-  ENDCARD: 5000,
-  ENDCARD_INPUT: 5010,
+  BG: -1_000_000, // RoomBackground bands at BG, images at BG+1
+  ROOM_Z: 3000, // per-zIndex layer separation for room stickers
+  OUTLINE_BADGE: 50_000, // small outline numbers, above all room stickers
+  TRAY_BG: 99_980,
+  TRAY_BADGE: 99_990, // BEHIND the tray sticker (request: badge behind, peeking)
+  TRAY_ITEM: 100_000,
+  DRAG: 100_050,
+  BURST: 100_100,
+  LOGO: 100_200,
+  DIM: 110_000,
+  HAND: 111_000,
+  ENDCARD: 120_000,
+  ENDCARD_INPUT: 120_010,
 }
 
-// Global sticker scale (the source art is sized for a denser room; scaling down
-// gives the lighter spacing we want). Per-sticker `scale` multiplies this.
-// The reference (ref.jpg) is composed on this same room at native sticker scale,
-// so 1.0 reproduces the reference's sizing/density exactly.
+// Global sticker scale multiplier; per-sticker `scale` (from the editor)
+// multiplies this. The reference is composed at native scale, so 1.0 matches it.
 export const STICKER_SCALE = 1.0
 
 // Interaction timings (ms).

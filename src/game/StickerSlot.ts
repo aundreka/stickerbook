@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { DEPTH, DESIGN_H, STICKER_SCALE } from '../constants'
+import { DEPTH, STICKER_SCALE } from '../constants'
 import { texKey } from '../assets'
 import { sx, sy, sd } from '../utils/responsive'
 import type { StickerDef } from './layout'
@@ -33,16 +33,21 @@ export class StickerSlot {
     return this.def.h * this.sc
   }
 
-  /** Painter depth from the sprite's feet (bottom). Floor items go to a back
-   *  sub-band (0..1) so they're always under characters standing on them. */
+  /** Depth = zIndex layer (primary) + the sprite's feet (tie-break), so lower-in-
+   *  room draws in front within a zIndex; set zIndex negative (e.g. rug) to push
+   *  something behind everything. */
   private depthFor(): number {
-    const feet = this.def.base ?? this.def.cy + this.dispH / 2
-    if (this.def.floor) return Phaser.Math.Clamp(feet / DESIGN_H, 0, 1)
-    return 100 + feet
+    const feet = this.def.cy + this.dispH / 2
+    return (this.def.zIndex ?? 0) * DEPTH.ROOM_Z + feet
   }
 
   get center(): { x: number; y: number } {
     return { x: sx(this.def.cx), y: sy(this.def.cy) }
+  }
+
+  /** On-screen size of the placed/outline art (for the drag hover-snap preview). */
+  get displaySize(): { w: number; h: number } {
+    return { w: sd(this.dispW), h: sd(this.dispH) }
   }
 
   get hitRadius(): number {
@@ -117,8 +122,10 @@ export class StickerSlot {
   private makeBadge(): Phaser.GameObjects.Text {
     // Small bare number inside the white outline (no border). High depth so it
     // stays readable even when a later round's outline overlaps placed art.
+    // High resolution keeps it crisp on high-DPI / scaled canvases.
     return this.scene.add
       .text(0, 0, String(this.def.id), { fontFamily: 'Arial, sans-serif', fontStyle: 'bold', color: '#444444' })
+      .setResolution(3)
       .setOrigin(0.5)
       .setDepth(DEPTH.OUTLINE_BADGE)
   }
@@ -130,7 +137,7 @@ export class StickerSlot {
 
   private layoutBadge(): void {
     if (!this.badge) return
-    this.badge.setPosition(sx(this.def.cx + (this.def.nx ?? 0)), sy(this.def.cy + (this.def.ny ?? 0)))
+    this.badge.setPosition(sx(this.def.labelX ?? this.def.cx), sy(this.def.labelY ?? this.def.cy))
     this.badge.setFontSize(Math.max(11, sd(30)))
   }
 

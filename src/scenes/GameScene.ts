@@ -54,6 +54,7 @@ export class GameScene extends Phaser.Scene {
     this.progress = new ProgressTracker(this, () => this.endGame())
     this.dragCtl = new DragController(this, {
       onStart: () => this.onDragStart(),
+      onMove: (id, x, y) => this.onDragMove(id, x, y),
       onDrop: (id, x, y) => this.onDrop(id, x, y),
     })
 
@@ -152,6 +153,31 @@ export class GameScene extends Phaser.Scene {
     this.tutorialDone = true
     this.beginPlay()
     this.resetIdle()
+  }
+
+  // As the dragged sticker nears its correct slot, magnet it toward the slot
+  // center and give a small, CONSISTENT pop (not matched to the outline size —
+  // that upscaled big stickers and blurred them). Keeps the art crisp and makes
+  // the lock-on feel satisfying.
+  private onDragMove(id: number, px: number, py: number): void {
+    const img = this.tray.objectOf(id)
+    if (!img) return
+    const slot = this.slots.get(id)
+    if (!slot.active || slot.placed) return
+    const c = slot.center
+    const ds = slot.displaySize
+    const dist = Phaser.Math.Distance.Between(px, py, c.x, c.y)
+    const zone = Math.max(ds.w, ds.h) * 0.7 + 60
+    const rest = (img.getData('restScale') as number) || img.scaleX
+    // Progressive: t=0 at the zone edge, 1 at the slot center. The closer it is,
+    // the harder it magnets onto the slot and the more it grows — so it "locks
+    // on" to the outline rather than just drifting.
+    const t = Phaser.Math.Clamp(1 - dist / zone, 0, 1)
+    img.setScale(Phaser.Math.Linear(img.scaleX, rest * (1.12 + t * 0.22), 0.3))
+    if (t > 0) {
+      img.x = Phaser.Math.Linear(img.x, c.x, t * 0.85)
+      img.y = Phaser.Math.Linear(img.y, c.y, t * 0.85)
+    }
   }
 
   private onDrop(id: number, x: number, y: number): void {

@@ -3,7 +3,7 @@ import { DEPTH } from '../constants'
 
 interface DragCallbacks {
   onStart?: (id: number) => void
-  onMove?: () => void
+  onMove?: (id: number, x: number, y: number) => void
   onDrop: (id: number, x: number, y: number) => void
 }
 
@@ -35,7 +35,7 @@ export class DragController {
         const img = obj as Phaser.GameObjects.Image
         img.x = dragX
         img.y = dragY
-        cb.onMove?.()
+        cb.onMove?.(img.getData('stickerId') as number, dragX, dragY)
       },
     )
 

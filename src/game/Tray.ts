@@ -39,10 +39,11 @@ export class Tray {
 
   private makeBadge(id: number): Phaser.GameObjects.Container {
     // children sized in design px; the container is scaled to screen in syncBadge.
-    // Same small size as the in-scene outline badge for a consistent look.
-    const circle = this.scene.add.circle(0, 0, 40, 0xffffff).setStrokeStyle(5, 0x4f7fc4)
+    // White circle, BLACK border, sitting BEHIND the sticker (peeking top-right).
+    const circle = this.scene.add.circle(0, 0, 40, 0xffffff).setStrokeStyle(5, 0x000000)
     const text = this.scene.add
-      .text(0, 0, String(id), { fontFamily: 'Arial, sans-serif', fontStyle: 'bold', color: '#2b2b2b' })
+      .text(0, 0, String(id), { fontFamily: 'Arial, sans-serif', fontStyle: 'bold', color: '#000000' })
+      .setResolution(3)
       .setOrigin(0.5)
     text.setFontSize(46)
     return this.scene.add.container(0, 0, [circle, text]).setDepth(DEPTH.TRAY_BADGE)
@@ -64,6 +65,7 @@ export class Tray {
       // entrance
       const restX = w / img.width
       const restY = h / img.height
+      img.setData('restScale', restX) // for the drag hover-snap to revert to
       img.setScale(restX * 0.6, restY * 0.6)
       this.scene.tweens.add({ targets: img, scaleX: restX, scaleY: restY, duration: 280, delay: i * 70, ease: 'Back.easeOut' })
     })
@@ -73,10 +75,10 @@ export class Tray {
     const dw = it.img.displayWidth
     const dh = it.img.displayHeight
     it.badge.setScale(dw / ITEM_SIZE)
-    // Pushed to the top-right corner (into the art's transparent margin) so there
-    // is a small gap and the badge isn't stuck to the sticker.
-    it.badge.setPosition(it.img.x + dw * 0.37, it.img.y - dh * 0.39)
-    it.badge.setDepth(it.img.depth + 1)
+    // Top-right, slightly INSIDE the sticker so it overlaps; depth below the
+    // sticker so the sticker covers its lower-left and the badge peeks out.
+    it.badge.setPosition(it.img.x + dw * 0.3, it.img.y - dh * 0.32)
+    it.badge.setDepth(it.img.depth - 1)
     it.badge.setVisible(it.img.visible)
   }
 
@@ -147,6 +149,7 @@ export class Tray {
       const home = this.homeFor(i, ids.length)
       it.homeX = home.x
       it.homeY = home.y
+      it.img.setData('restScale', w / it.img.width)
       if (!it.img.getData('dragging')) {
         it.img.setDisplaySize(w, h)
         it.img.setPosition(home.x, home.y)

@@ -68,6 +68,27 @@ npm run build:all    # ALL 24 variants -> dist/<length>/<Network>/
 npm run typecheck    # tsc --noEmit
 ```
 
+### Editing the sticker layout (visual tool)
+
+`tools/sticker-editor.html` is a drag-and-drop editor for every sticker's
+position, number-label position, z-index and scale.
+
+```bash
+npm run tool         # opens the editor in the browser
+```
+
+Select a sticker (dropdown or click), **drag it to move**, **scroll over it to
+scale**, drag its number to move the label, or use the sliders. Then **Download**
+the JSON (saves `layout.json`) and apply it:
+
+```bash
+npm run layout       # reads ./layout.json -> rewrites src/game/layout.ts
+npm run build:all    # rebuild
+```
+
+The layout shipped here is matched to the reference image; the editor lets you
+fine-tune any sticker (`{ id, x, y, labelX, labelY, zIndex, scale }`).
+
 ### Output layout (`npm run build:all`)
 
 ```

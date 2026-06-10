@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sticker Position Editor</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Arial, sans-serif; background: #eef1f5; display: flex; height: 100vh; overflow: hidden; }
+      #stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; }
+      #canvas {
+        position: relative; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,0.2);
+        overflow: hidden; user-select: none; touch-action: none;
+      }
+      #bg { position: absolute; pointer-events: none; }
+      .stk { position: absolute; cursor: grab; }
+      .stk img { display: block; width: 100%; height: 100%; pointer-events: none; }
+      .stk.sel { outline: 2px dashed #2b7; outline-offset: 1px; }
+      .lbl {
+        position: absolute; transform: translate(-50%, -50%); font-weight: bold; color: #000;
+        background: #fff; border: 2px solid #000; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; cursor: move; z-index: 9000;
+      }
+      .lbl.sel { outline: 2px dashed #c33; }
+      #panel { width: 340px; background: #fff; border-left: 1px solid #ccd; padding: 14px; overflow-y: auto; }
+      h2 { margin: 0 0 10px; font-size: 18px; }
+      label { display: block; font-size: 12px; color: #556; margin: 10px 0 3px; font-weight: bold; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .row input[type=range] { flex: 1; }
+      .row input[type=number] { width: 78px; }
+      input { padding: 4px; border: 1px solid #bcc; border-radius: 4px; }
+      select { width: 100%; padding: 6px; border: 1px solid #bcc; border-radius: 4px; }
+      .btns { display: flex; gap: 8px; margin: 14px 0; }
+      button { flex: 1; padding: 9px; border: 0; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; }
+      #copy { background: #3a78d6; } #dl { background: #2aa36b; } #reset { background: #999; flex: 0 0 auto; }
+      #json { width: 100%; height: 200px; font-family: monospace; font-size: 11px; border: 1px solid #ccd; border-radius: 4px; padding: 6px; }
+      .hint { font-size: 11px; color: #889; margin: 4px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"><div id="canvas"><img id="bg" /></div></div>
+    <div id="panel">
+      <h2>Sticker Position</h2>
+      <label>STICKER</label>
+      <select id="pick"></select>
+      <label>STICKER X</label><div class="row"><input type="range" id="xr" min="-100" max="1180" /><input type="number" id="xn" /></div>
+      <label>STICKER Y</label><div class="row"><input type="range" id="yr" min="-100" max="2020" /><input type="number" id="yn" /></div>
+      <label>NUMBER X</label><div class="row"><input type="range" id="lxr" min="-100" max="1180" /><input type="number" id="lxn" /></div>
+      <label>NUMBER Y</label><div class="row"><input type="range" id="lyr" min="-100" max="2020" /><input type="number" id="lyn" /></div>
+      <label>Z INDEX</label><div class="row"><input type="range" id="zr" min="-5" max="5" step="1" /><input type="number" id="zn" /></div>
+      <label>SCALE</label><div class="row"><input type="range" id="sr" min="0.2" max="2" step="0.01" /><input type="number" id="sn" step="0.01" /></div>
+      <p class="hint">Drag a sticker to move it • scroll over it to scale • drag its number to move the label.</p>
+      <div class="btns"><button id="copy">Copy JSON</button><button id="dl">Download</button><button id="reset" title="reload">↺</button></div>
+      <textarea id="json" readonly></textarea>
+    </div>
+
+    <script>
+      const DW = 1080, DH = 1920, BGW = 1200
+      const NAMES = {1:'Girl-Pink-Duduk',2:'Girl-Duduk',3:'Girl-Tea-2',4:'Telfon',5:'Pigora-Gunung',6:'Pewangi-Ruangan',7:'Meja',8:'Majalah',9:'Ibu-Masak',10:'Kursi',11:'Girl-Sleep',12:'Buku',13:'Cheesecake',14:'Karpet',15:'Water',16:'Remote',17:'Jam-Dinding',18:'Bantal',19:'Bayi',20:'Boy-Kucing',21:'Keys',22:'Bear',23:'Pigora-Tulip',24:'Balok-Menara',25:'Boy-Juice',26:'Pot',27:'Boy-Hide-Lamp',28:'Dot-Susu',29:'Yarn',30:'Dekorasi',31:'Ibu-Bayi',32:'Boy-Duduk-Sila',33:'Tong-Sampah',34:'Kaktus',35:'Boy-Cookie',36:'Boy-Plane',37:'Boy-Tiduran',38:'Boy-Laper',39:'Bapak-Mau-Makan',40:'Girl-Tea-1',41:'Boy-Telp',42:'Cicak',43:'Teh',44:'Girl-Read',45:'Gantungan-Topi',46:'Truck',47:'Cat',48:'Girl-Boneka',49:'Balok-Angka',50:'Blanket'}
+      const POS = {1:[449,958],2:[718,1219],3:[281,1337],4:[137,831],5:[441,273],6:[867,104],7:[526,1065],8:[579,1193],9:[879,1196],10:[150,937],11:[368,475],12:[785,91],13:[901,701],14:[564,1082],15:[92,1115],16:[396,672],17:[442,86],18:[716,490],19:[745,978],20:[664,1418],21:[218,1118],22:[91,674],23:[746,301],24:[589,882],25:[885,1168],26:[172,484],27:[935,515],28:[617,1029],29:[296,680],30:[600,276],31:[828,983],32:[411,1124],33:[57,593],34:[939,97],35:[687,722],36:[482,1387],37:[347,819],38:[521,759],39:[860,1413],40:[123,1283],41:[519,768],42:[629,91],43:[804,704],44:[262,969],45:[897,318],46:[747,846],47:[540,517],48:[996,946],49:[539,1055],50:[400,313]}
+      const OVR = { 7:{labelY:1020}, 14:{zIndex:-1, labelY:1127} } // current layout overrides
+
+      const data = []
+      // Seed from the live layout.json so the editor opens with the CURRENT
+      // layout; fall back to the built-in defaults if it can't be fetched.
+      function populate(loaded) {
+        for (let id = 1; id <= 50; id++) {
+          const f = loaded && loaded.find((d) => d.id === id)
+          const o = OVR[id] || {}
+          data.push({ id, name: NAMES[id], file: `sticker_${id}_${NAMES[id]}.png`,
+            x: f ? f.x : POS[id][0], y: f ? f.y : POS[id][1],
+            labelX: f ? (f.labelX ?? f.x) : (o.labelX ?? POS[id][0]),
+            labelY: f ? (f.labelY ?? f.y) : (o.labelY ?? POS[id][1]),
+            zIndex: f ? (f.zIndex ?? 0) : (o.zIndex ?? 0),
+            scale: f ? (f.scale ?? 1) : (o.scale ?? 1) })
+        }
+      }
+
+      const canvas = document.getElementById('canvas'), bg = document.getElementById('bg')
+      let disp = 1, cur = 1
+      const els = {} // id -> {wrap, img, lbl, nat:[w,h]}
+
+      function fit() {
+        disp = Math.min((innerWidth - 360) / DW, (innerHeight - 24) / DH)
+        canvas.style.width = DW * disp + 'px'; canvas.style.height = DH * disp + 'px'
+        bg.style.width = BGW * disp + 'px'; bg.style.height = DH * disp + 'px'
+        bg.style.left = -((BGW - DW) / 2) * disp + 'px'; bg.style.top = '0'
+        for (const d of data) place(d)
+      }
+      bg.src = '../src/assets/Sprites/Background/Bg-colored-extended_1.png'
+
+      function place(d) {
+        const e = els[d.id]; if (!e) return
+        const nat = e.nat || [200, 200]
+        const w = nat[0] * d.scale * disp, h = nat[1] * d.scale * disp
+        e.wrap.style.left = d.x * disp - w / 2 + 'px'; e.wrap.style.top = d.y * disp - h / 2 + 'px'
+        e.wrap.style.width = w + 'px'; e.wrap.style.height = h + 'px'
+        e.lbl.style.left = d.labelX * disp + 'px'; e.lbl.style.top = d.labelY * disp + 'px'
+        const ls = Math.max(14, 30 * disp)
+        e.lbl.style.width = ls + 'px'; e.lbl.style.height = ls + 'px'; e.lbl.style.fontSize = ls * 0.5 + 'px'
+      }
+      function restack() {
+        const sorted = [...data].sort((a, b) => (a.zIndex * 1e5 + a.y) - (b.zIndex * 1e5 + b.y))
+        sorted.forEach((d, i) => { if (els[d.id]) els[d.id].wrap.style.zIndex = 100 + i })
+      }
+
+      function buildStickers() {
+        for (const d of data) {
+          const wrap = document.createElement('div'); wrap.className = 'stk'
+          const img = document.createElement('img')
+          img.src = '../src/assets/Sprites/Colored/' + d.file
+          img.onload = () => { els[d.id].nat = [img.naturalWidth, img.naturalHeight]; place(d); restack() }
+          wrap.appendChild(img)
+          const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = d.id
+          canvas.appendChild(wrap); canvas.appendChild(lbl)
+          els[d.id] = { wrap, img, lbl, nat: null }
+          wrap.addEventListener('pointerdown', (ev) => startDrag(ev, d, 'pos'))
+          lbl.addEventListener('pointerdown', (ev) => { ev.stopPropagation(); startDrag(ev, d, 'label') })
+          wrap.addEventListener('wheel', (ev) => { ev.preventDefault(); select(d.id); d.scale = clamp(+(d.scale + (ev.deltaY < 0 ? 0.03 : -0.03)).toFixed(3), 0.2, 2); place(d); sync() }, { passive: false })
+        }
+      }
+
+      function startDrag(ev, d, mode) {
+        ev.preventDefault(); select(d.id)
+        const r = canvas.getBoundingClientRect()
+        const move = (e) => {
+          const mx = (e.clientX - r.left) / disp, my = (e.clientY - r.top) / disp
+          if (mode === 'pos') { d.x = Math.round(mx); d.y = Math.round(my) }
+          else { d.labelX = Math.round(mx); d.labelY = Math.round(my) }
+          place(d); if (mode === 'pos') restack(); sync()
+        }
+        const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up) }
+        addEventListener('pointermove', move); addEventListener('pointerup', up)
+      }
+
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
+      const get = (id) => data.find((d) => d.id === id)
+      function select(id) {
+        cur = id
+        for (const d of data) { els[d.id].wrap.classList.toggle('sel', d.id === id); els[d.id].lbl.classList.toggle('sel', d.id === id) }
+        document.getElementById('pick').value = id
+        sync()
+      }
+
+      const P = (id) => document.getElementById(id)
+      function bind(rangeId, numId, key, isFloat) {
+        const r = P(rangeId), n = P(numId)
+        const set = (v) => { const d = get(cur); d[key] = isFloat ? +(+v).toFixed(3) : Math.round(+v); place(d); restack(); sync() }
+        r.addEventListener('input', () => set(r.value)); n.addEventListener('input', () => set(n.value))
+      }
+      bind('xr','xn','x'); bind('yr','yn','y'); bind('lxr','lxn','labelX'); bind('lyr','lyn','labelY'); bind('zr','zn','zIndex'); bind('sr','sn','scale', true)
+
+      function sync() {
+        const d = get(cur)
+        const m = { xr:'x',xn:'x',yr:'y',yn:'y',lxr:'labelX',lxn:'labelX',lyr:'labelY',lyn:'labelY',zr:'zIndex',zn:'zIndex',sr:'scale',sn:'scale' }
+        for (const id in m) P(id).value = d[m[id]]
+        P('json').value = JSON.stringify(data.map((d) => ({ id: d.id, x: d.x, y: d.y, labelX: d.labelX, labelY: d.labelY, zIndex: d.zIndex, scale: d.scale })), null, 2)
+      }
+
+      const pick = document.getElementById('pick')
+      function buildDropdown() {
+        data.forEach((d) => { const o = document.createElement('option'); o.value = d.id; o.textContent = `${d.id} — ${d.name}`; pick.appendChild(o) })
+      }
+      pick.addEventListener('change', () => select(+pick.value))
+      document.getElementById('copy').onclick = () => { navigator.clipboard.writeText(P('json').value); }
+      document.getElementById('dl').onclick = () => {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([P('json').value], { type: 'application/json' }))
+        a.download = 'layout.json'; a.click()
+      }
+      document.getElementById('reset').onclick = () => location.reload()
+      addEventListener('resize', fit)
+      async function init() {
+        let loaded = null
+        try {
+          const r = await fetch('/layout.json', { cache: 'no-store' })
+          if (r.ok) loaded = await r.json()
+        } catch (e) { /* file:// or missing — use defaults */ }
+        populate(loaded)
+        buildStickers()
+        buildDropdown()
+        fit()
+        select(1)
+      }
+      init()
+    </script>
+  </body>
+</html>
