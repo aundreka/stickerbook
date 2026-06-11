@@ -7,7 +7,10 @@ import { sx, sy, sd, viewW } from '../utils/responsive'
 // the number badge is a separate object synced to the image every frame
 // (GameScene.update -> syncBadges), which also makes it dim/raise with its image
 // during the tutorial. The number lets the player match sticker #N to outline #N.
-const ITEM_SIZE = 250 // design px
+const ITEM_SIZE = 250 // tray-cell reference (design px) — drives badge placement
+// The sticker art is drawn a bit smaller than the cell so its top-right never
+// fully covers the (fixed-position) number badge behind it.
+const TRAY_STICKER_SCALE = 0.82
 
 interface TrayItem {
   id: number
@@ -29,7 +32,8 @@ export class Tray {
   }
 
   private itemDisplay(): { w: number; h: number } {
-    return { w: sd(ITEM_SIZE), h: sd(ITEM_SIZE * (343 / 339)) }
+    const d = ITEM_SIZE * TRAY_STICKER_SCALE
+    return { w: sd(d), h: sd(d * (343 / 339)) }
   }
 
   private homeFor(index: number, count: number): { x: number; y: number } {
@@ -72,12 +76,11 @@ export class Tray {
   }
 
   private syncBadge(it: TrayItem): void {
-    const dw = it.img.displayWidth
-    const dh = it.img.displayHeight
-    it.badge.setScale(dw / ITEM_SIZE)
-    // Top-right, slightly INSIDE the sticker so it overlaps; depth below the
-    // sticker so the sticker covers its lower-left and the badge peeks out.
-    it.badge.setPosition(it.img.x + dw * 0.3, it.img.y - dh * 0.32)
+    // Badge keeps a FIXED size + top-right offset (based on the cell, not the
+    // shrunk sticker), and sits behind the sticker. Because the sticker is drawn
+    // smaller (TRAY_STICKER_SCALE), its art never fully covers the number.
+    it.badge.setScale(sd(1))
+    it.badge.setPosition(it.img.x + sd(ITEM_SIZE * 0.3), it.img.y - sd(ITEM_SIZE * 0.32))
     it.badge.setDepth(it.img.depth - 1)
     it.badge.setVisible(it.img.visible)
   }
