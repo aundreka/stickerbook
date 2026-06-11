@@ -86,26 +86,19 @@ export class StickerSlot {
       .setOrigin(0.5)
       .setDepth(this.depthFor())
     this.layoutImage(this.colored)
-    // Snap-in: pop up past full size, then settle — a satisfying placement beat.
     if (!animate) return
+    // Bounce: pop UP from full size and settle back. Starting at full size (not
+    // from zero) means it reads identically whether the sticker eased in or
+    // SNAPPED in — every placement gets the same satisfying bounce, so none just
+    // "stick" in place.
     const t = this.colored.scaleX
-    this.colored.setScale(t * 0.2)
     this.scene.tweens.add({
       targets: this.colored,
-      scaleX: t * 1.18,
-      scaleY: t * 1.18,
-      duration: 190,
+      scaleX: t * 1.16,
+      scaleY: t * 1.16,
+      duration: 150,
       ease: 'Quad.easeOut',
-      onComplete: () => {
-        if (!this.colored) return
-        this.scene.tweens.add({
-          targets: this.colored,
-          scaleX: t,
-          scaleY: t,
-          duration: 180,
-          ease: 'Quad.easeInOut',
-        })
-      },
+      yoyo: true,
     })
   }
 

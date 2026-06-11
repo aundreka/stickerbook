@@ -218,11 +218,10 @@ export class GameScene extends Phaser.Scene {
   private onCorrect(id: number): void {
     const c = this.slots.get(id).center
     const img = this.tray.objectOf(id)
-    // If it was already snapped, it's sitting on the slot at the right size, so
-    // place it seamlessly (no shrink-then-pop). Otherwise ease it in first.
-    if (img && this.tray.isPreviewing(id)) {
-      this.commitPlacement(id, false)
-    } else if (img) {
+    // Snapped: it's already on the slot at the right size — place + bounce now
+    // (the swap is at the same size, so it's seamless, then it bounces like the
+    // rest). Not snapped: ease it to the slot first, then place + bounce.
+    if (img && !this.tray.isPreviewing(id)) {
       this.tweens.killTweensOf(img)
       this.tweens.add({
         targets: img,
@@ -230,17 +229,17 @@ export class GameScene extends Phaser.Scene {
         y: c.y,
         duration: 150,
         ease: 'Sine.easeIn',
-        onComplete: () => this.commitPlacement(id, true),
+        onComplete: () => this.commitPlacement(id),
       })
     } else {
-      this.commitPlacement(id, true)
+      this.commitPlacement(id)
     }
   }
 
-  private commitPlacement(id: number, pop = true): void {
+  private commitPlacement(id: number): void {
     const c = this.slots.get(id).center
     this.tray.removeItem(id)
-    this.slots.place(id, pop)
+    this.slots.place(id)
     this.starBurst.play(c.x, c.y)
     this.audioMgr.playCorrect()
     if (!this.solvedOnce) {

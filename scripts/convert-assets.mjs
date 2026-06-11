@@ -14,9 +14,10 @@ import path from 'node:path'
 const SRC = path.resolve('src/assets/Sprites')
 const OUT = path.resolve('src/assets-webp/Sprites')
 
-// Per-folder quality. Numbered = thin line-art (compresses to ~nothing).
-// Draggable is the heaviest group, so it gets the most aggressive setting.
-const QUALITY = { draggable: 74, numbered: 80, colored: 82, background: 82, default: 82 }
+// Per-folder quality. Sprites are only ~1 MB total (audio + Phaser dominate the
+// budget), so quality is kept HIGH everywhere — near-lossless for the art the
+// player looks at closely (stickers, outlines) with no visible artifacts.
+const QUALITY = { draggable: 95, numbered: 96, colored: 95, background: 90, default: 94 }
 
 function qualityFor(rel) {
   const p = rel.replace(/\\/g, '/').toLowerCase()
