@@ -148,6 +148,13 @@ export class GameScene extends Phaser.Scene {
     if (this.roundIndex === 0 && !this.tutorialDone) {
       this.time.delayedCall(550, () => this.maybeTutorial())
     }
+    // QA-only: expose this round's slot centers (canvas px) for headless drag tests.
+    if (typeof location !== 'undefined' && location.hash.toLowerCase().includes('dbg')) {
+      ;(window as unknown as Record<string, unknown>).__round = ids.map((id) => {
+        const c = this.slots.get(id).center
+        return { id, x: c.x, y: c.y }
+      })
+    }
   }
 
   private maybeTutorial(): void {
@@ -165,10 +172,9 @@ export class GameScene extends Phaser.Scene {
     this.resetIdle()
   }
 
-  // As the dragged sticker nears its correct slot, magnet it toward the slot
-  // center and give a small, CONSISTENT pop (not matched to the outline size —
-  // that upscaled big stickers and blurred them). Keeps the art crisp and makes
-  // the lock-on feel satisfying.
+  // As the dragged sticker nears its slot, preview the COLORED art at the EXACT
+  // outline size (so it fits the uncolored outline perfectly + stays crisp) and
+  // magnet toward the slot center — progressively stronger the closer it gets.
   private onDragMove(id: number, px: number, py: number): void {
     const img = this.tray.objectOf(id)
     if (!img) return
@@ -178,15 +184,13 @@ export class GameScene extends Phaser.Scene {
     const ds = slot.displaySize
     const dist = Phaser.Math.Distance.Between(px, py, c.x, c.y)
     const zone = Math.max(ds.w, ds.h) * 0.7 + 60
-    const rest = (img.getData('restScale') as number) || img.scaleX
-    // Progressive: t=0 at the zone edge, 1 at the slot center. The closer it is,
-    // the harder it magnets onto the slot and the more it grows — so it "locks
-    // on" to the outline rather than just drifting.
-    const t = Phaser.Math.Clamp(1 - dist / zone, 0, 1)
-    img.setScale(Phaser.Math.Linear(img.scaleX, rest * (1.12 + t * 0.22), 0.3))
-    if (t > 0) {
-      img.x = Phaser.Math.Linear(img.x, c.x, t * 0.85)
-      img.y = Phaser.Math.Linear(img.y, c.y, t * 0.85)
+    if (dist < zone) {
+      this.tray.setPreview(id, true, ds.w, ds.h)
+      const t = Phaser.Math.Clamp(1 - dist / zone, 0, 1)
+      img.x = Phaser.Math.Linear(img.x, c.x, t * 0.9)
+      img.y = Phaser.Math.Linear(img.y, c.y, t * 0.9)
+    } else {
+      this.tray.setPreview(id, false)
     }
   }
 
