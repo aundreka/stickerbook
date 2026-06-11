@@ -52,8 +52,9 @@ export const DEPTH = {
 // multiplies this. The reference is composed at native scale, so 1.0 matches it.
 export const STICKER_SCALE = 1.0
 
-// Interaction timings (ms).
-export const IDLE_HINT_MS = 5000
+// Interaction timings (ms). The hand guide returns after a short idle so a
+// struggling/idle player is nudged again quickly.
+export const IDLE_HINT_MS = 3000
 export const TUTORIAL_DIM_ALPHA = 0.75
 
 // Tray geometry in design space (blue-cointainer is 1080x389).

@@ -221,4 +221,9 @@ export function bindLifecycle(scene: Phaser.Scene): void {
   })
   // Generic page visibility (GoogleAds / Facebook / Moloco + all)
   document.addEventListener('visibilitychange', () => (document.hidden ? pause() : resume()))
+  // Recovery backstops: always resume when the tab/window regains focus, even if
+  // a network's viewable/exposure event (or visibilitychange) never re-fired —
+  // otherwise an alt-tab could leave the scene paused (a perceived freeze).
+  window.addEventListener('focus', resume)
+  window.addEventListener('pageshow', resume)
 }

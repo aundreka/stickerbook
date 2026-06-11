@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { DEPTH, TUTORIAL_DIM_ALPHA } from '../constants'
-import { sd, viewW, viewH } from '../utils/responsive'
+import { sx, sy, sd, viewW, viewH } from '../utils/responsive'
 
 // The pointing-hand helper. Two modes:
 //  - tutorial: dim the screen, isolate the target tray sticker (raised above
@@ -14,6 +14,11 @@ export class HandHint {
   private tween?: Phaser.Tweens.Tween
   private raised?: Phaser.GameObjects.Image
   private active = false
+  // The current target (tray sticker) + slot center in DESIGN space, kept so the
+  // hand path can be re-derived on relayout (e.g. rotating into landscape).
+  private fromImg?: Phaser.GameObjects.Image
+  private toDX = 0
+  private toDY = 0
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -44,8 +49,9 @@ export class HandHint {
     })
   }
 
-  /** Full tutorial with dim + isolated target. */
-  showTutorial(target: Phaser.GameObjects.Image, slotX: number, slotY: number): void {
+  /** Full tutorial with dim + isolated target. `slotDX/slotDY` are the slot's
+   *  DESIGN-space center (so the hand can be re-aimed correctly after rotation). */
+  showTutorial(target: Phaser.GameObjects.Image, slotDX: number, slotDY: number): void {
     if (this.active) return
     this.active = true
     this.dim = this.scene.add
@@ -54,14 +60,21 @@ export class HandHint {
       .setInteractive()
     this.raised = target
     target.setDepth(DEPTH.DIM + 1) // isolate above the dim
-    this.animate(target.x, target.y, slotX, slotY)
+    this.aim(target, slotDX, slotDY)
   }
 
   /** Lightweight idle nudge (no dim). */
-  armIdle(target: Phaser.GameObjects.Image, slotX: number, slotY: number): void {
+  armIdle(target: Phaser.GameObjects.Image, slotDX: number, slotDY: number): void {
     if (this.active) return
     this.active = true
-    this.animate(target.x, target.y, slotX, slotY)
+    this.aim(target, slotDX, slotDY)
+  }
+
+  private aim(target: Phaser.GameObjects.Image, slotDX: number, slotDY: number): void {
+    this.fromImg = target
+    this.toDX = slotDX
+    this.toDY = slotDY
+    this.animate(target.x, target.y, sx(slotDX), sy(slotDY))
   }
 
   cancel(): void {
@@ -72,11 +85,17 @@ export class HandHint {
     this.hand.setVisible(false)
     this.raised?.setDepth(DEPTH.TRAY_ITEM)
     this.raised = undefined
+    this.fromImg = undefined
     this.dim?.destroy()
     this.dim = undefined
   }
 
   relayout(): void {
     if (this.dim) this.dim.setPosition(viewW() / 2, viewH() / 2).setSize(viewW(), viewH())
+    // Re-derive the hand path from the (relaid-out) target + slot so it stays on
+    // point after a resize/rotation instead of animating between stale coords.
+    if (this.active && this.fromImg) {
+      this.animate(this.fromImg.x, this.fromImg.y, sx(this.toDX), sy(this.toDY))
+    }
   }
 }

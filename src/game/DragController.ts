@@ -33,8 +33,13 @@ export class DragController {
       (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject, dragX: number, dragY: number) => {
         if (!this.enabled) return
         const img = obj as Phaser.GameObjects.Image
-        img.x = dragX
-        img.y = dragY
+        // While snap-locked the sticker is held on its slot (eased there), so
+        // don't drag it back to the finger — but still report the pointer so the
+        // scene can decide to release the snap when pulled far enough away.
+        if (!img.getData('snapLock')) {
+          img.x = dragX
+          img.y = dragY
+        }
         cb.onMove?.(img.getData('stickerId') as number, dragX, dragY)
       },
     )

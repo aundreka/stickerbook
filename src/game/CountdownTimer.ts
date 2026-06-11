@@ -1,8 +1,10 @@
 import Phaser from 'phaser'
 import { DEPTH, DESIGN_W } from '../constants'
-import { sx, sy, sd } from '../utils/responsive'
+import { sx, sy, sd, insets, isLandscape } from '../utils/responsive'
 
-// Top-center M:SS countdown pill, shown only for the 60-second iteration.
+// M:SS countdown pill, shown only for the 60-second iteration. Compact so it
+// doesn't cover the room: small + top-center in portrait, tucked into the
+// top-left corner in landscape (where center would sit over the play area).
 // GameScene feeds it the remaining seconds each frame.
 export class CountdownTimer {
   private scene: Phaser.Scene
@@ -51,14 +53,25 @@ export class CountdownTimer {
 
   private draw(): void {
     if (!this.shown) return
-    const cx = sx(DESIGN_W / 2)
-    const cy = sy(80)
-    this.text.setFontSize(Math.max(20, sd(48)))
+    const land = isLandscape()
+    // Smaller pill so it blocks less of the room.
+    this.text.setFontSize(land ? Math.max(16, sd(34)) : Math.max(15, sd(32)))
+    const pw = this.text.width + sd(30)
+    const ph = this.text.height + sd(12)
+    const ins = insets()
+    let cx: number
+    let cy: number
+    if (land) {
+      // Top-left corner so it never sits over the centred room.
+      cx = ins.left + sd(18) + pw / 2
+      cy = ins.top + sd(18) + ph / 2
+    } else {
+      cx = sx(DESIGN_W / 2)
+      cy = Math.max(ins.top + ph / 2 + sd(8), sy(64))
+    }
     this.text.setPosition(cx, cy)
-    const pw = this.text.width + sd(60)
-    const ph = this.text.height + sd(16)
     this.bg.clear()
     this.bg.fillStyle(0x1b1030, 0.5)
-    this.bg.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, sd(20))
+    this.bg.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, sd(14))
   }
 }

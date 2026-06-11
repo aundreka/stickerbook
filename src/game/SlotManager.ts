@@ -23,8 +23,8 @@ export class SlotManager {
     for (const id of ids) this.get(id).activate()
   }
 
-  place(id: number): void {
-    this.get(id).placeColored()
+  place(id: number, animate = true): void {
+    this.get(id).placeColored(animate)
   }
 
   /** Open (active, not yet placed) slots — what a drop can match against. */

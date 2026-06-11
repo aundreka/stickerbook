@@ -121,6 +121,20 @@ export class StickerSlot {
     })
   }
 
+  /** Pause/resume the idle pulse. Paused while a sticker is snapped over the
+   *  outline (a wobbling outline behind the placed art looks wrong) and reset to
+   *  the exact base size so the snapped art lines up cleanly. */
+  setPulsing(on: boolean): void {
+    if (!this.outline || !this.active) return
+    if (on) {
+      if (!this.pulse) this.pulse = this.makePulse()
+    } else if (this.pulse) {
+      this.pulse.remove()
+      this.pulse = undefined
+      this.layoutImage(this.outline)
+    }
+  }
+
   private makeBadge(): Phaser.GameObjects.Text {
     // Small bare number inside the white outline (no border). High depth so it
     // stays readable even when a later round's outline overlaps placed art.
